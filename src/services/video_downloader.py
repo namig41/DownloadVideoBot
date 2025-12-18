@@ -8,14 +8,14 @@ from typing import Dict, Optional
 logger = logging.getLogger(__name__)
 
 
-async def download_video(url: str, bot_id: str = "video_downloader", max_duration: int = 60) -> Dict:
+async def download_video(url: str, bot_id: str = "video_downloader", max_duration: int = 300) -> Dict:
     """
     Скачивает короткие видео из Instagram, TikTok, YouTube Shorts
     
     Args:
         url: URL видео
         bot_id: ID бота для создания директории
-        max_duration: Максимальная длительность видео в секундах (по умолчанию 60)
+        max_duration: Максимальная длительность видео в секундах (по умолчанию 300 = 5 минут)
         
     Returns:
         dict с путем к файлу и метаданными или ошибкой

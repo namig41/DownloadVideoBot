@@ -17,13 +17,6 @@ dependencies = [
     "psycopg2-binary>=2.9.9",
 ]
 
-[project.optional-dependencies]
-dev = [
-    "pytest>=7.0.0",
-    "black>=23.0.0",
-    "ruff>=0.1.0",
-]
-
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
@@ -32,8 +25,14 @@ build-backend = "hatchling.build"
 packages = ["src"]
 
 [tool.uv]
-dev-dependencies = []
 package = true
+
+[dependency-groups]
+dev = [
+    "pytest>=7.0.0",
+    "black>=23.0.0",
+    "ruff>=0.1.0",
+]
 
 [tool.ruff]
 line-length = 100
