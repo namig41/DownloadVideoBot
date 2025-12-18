@@ -84,10 +84,72 @@ async def download_video(url: str, bot_id: str = "video_downloader", max_duratio
             
             logger.info(f"Видео успешно скачано: {filename}")
             return result
-    except Exception as e:
+    except yt_dlp.utils.DownloadError as e:
+        error_msg = str(e).lower()
         logger.error(f"Ошибка при скачивании видео {url}: {e}", exc_info=True)
+        
+        # Обрабатываем различные типы ошибок
+        if "private" in error_msg or "unavailable" in error_msg:
+            return {
+                "status": "failed",
+                "error": (
+                    "Видео недоступно для скачивания.\n\n"
+                    "Возможные причины:\n"
+                    "• Видео является приватным\n"
+                    "• Видео было удалено\n"
+                    "• Доступ к видео ограничен\n\n"
+                    "Проверьте ссылку и убедитесь, что видео публичное."
+                )
+            }
+        elif "unable to download" in error_msg or "network" in error_msg:
+            return {
+                "status": "failed",
+                "error": (
+                    "Не удалось подключиться к серверу.\n\n"
+                    "Попробуйте:\n"
+                    "• Проверить интернет-соединение\n"
+                    "• Повторить попытку через несколько секунд\n"
+                    "• Убедиться, что ссылка корректна"
+                )
+            }
+        elif "sign in" in error_msg or "login" in error_msg:
+            return {
+                "status": "failed",
+                "error": (
+                    "Для доступа к этому видео требуется авторизация.\n\n"
+                    "К сожалению, бот не может скачивать приватные или защищенные видео."
+                )
+            }
+        elif "age-restricted" in error_msg or "age" in error_msg:
+            return {
+                "status": "failed",
+                "error": (
+                    "Видео имеет возрастные ограничения.\n\n"
+                    "Бот не может скачивать контент с возрастными ограничениями."
+                )
+            }
+        else:
+            return {
+                "status": "failed",
+                "error": (
+                    "Не удалось скачать видео.\n\n"
+                    "Возможные причины:\n"
+                    "• Неверная ссылка\n"
+                    "• Видео недоступно\n"
+                    "• Проблемы с сервером платформы\n\n"
+                    "Проверьте ссылку и попробуйте снова."
+                )
+            }
+    except Exception as e:
+        logger.error(f"Неожиданная ошибка при скачивании видео {url}: {e}", exc_info=True)
         return {
             "status": "failed",
-            "error": str(e)
+            "error": (
+                "Произошла ошибка при обработке запроса.\n\n"
+                "Попробуйте:\n"
+                "• Проверить правильность ссылки\n"
+                "• Повторить попытку позже\n"
+                "• Использовать /help для получения справки"
+            )
         }
 

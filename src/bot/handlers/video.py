@@ -6,6 +6,9 @@ from services.user_service import UserService
 from services.video_downloader import download_video
 import re
 import os
+import logging
+
+logger = logging.getLogger(__name__)
 
 router = Router()
 
@@ -42,7 +45,7 @@ async def process_video_url(message: Message):
         await UserService.increment_requests(session, message.from_user.id)
     
     # Отправляем сообщение о начале обработки
-    status_msg = await message.answer("⏳ Начинаю скачивание видео...")
+    status_msg = await message.answer("⏳ Начинаю скачивание видео")
     
     try:
         # Скачиваем видео напрямую
@@ -58,7 +61,7 @@ async def process_video_url(message: Message):
             
             if file_path and os.path.exists(file_path):
                 try:
-                    await status_msg.edit_text("✅ Видео готово! Отправляю...")
+                    await status_msg.edit_text("✅ Видео готово. Отправляю")
                     video_file = FSInputFile(file_path)
                     await message.bot.send_video(
                         chat_id=message.chat.id,
@@ -77,16 +80,37 @@ async def process_video_url(message: Message):
                     except:
                         pass
                 except Exception as e:
-                    await status_msg.edit_text(
-                        f"✅ Видео готово, но произошла ошибка при отправке: {str(e)}"
-                    )
+                    error_msg = str(e).lower()
+                    if "file too large" in error_msg or "file_size" in error_msg:
+                        await status_msg.edit_text(
+                            "Видео готово, но файл слишком большой для отправки в Telegram.\n\n"
+                            "Максимальный размер файла в Telegram: 50 МБ.\n"
+                            "Попробуйте скачать видео с меньшим разрешением или сократить длительность."
+                        )
+                    elif "timeout" in error_msg or "timed out" in error_msg:
+                        await status_msg.edit_text(
+                            "Видео готово, но произошла ошибка при отправке из-за таймаута.\n\n"
+                            "Попробуйте запросить видео снова."
+                        )
+                    else:
+                        await status_msg.edit_text(
+                            "Видео готово, но произошла ошибка при отправке.\n\n"
+                            "Попробуйте запросить видео снова или обратитесь в поддержку."
+                        )
             else:
                 await status_msg.edit_text(
-                    f"✅ Задача выполнена: {result.get('message', 'Готово')}"
+                    f"Задача выполнена: {result.get('message', 'Готово')}"
                 )
         else:
             # Ошибка при скачивании
             error = result.get("error", "Неизвестная ошибка")
-            await status_msg.edit_text(f"❌ Ошибка: {error}")
+            await status_msg.edit_text(f"❌ {error}")
     except Exception as e:
-        await status_msg.edit_text(f"❌ Произошла ошибка: {str(e)}")
+        logger.error(f"Критическая ошибка при обработке видео: {e}", exc_info=True)
+        await status_msg.edit_text(
+            "❌ Произошла критическая ошибка при обработке запроса.\n\n"
+            "Попробуйте:\n"
+            "• Проверить правильность ссылки\n"
+            "• Повторить попытку через несколько секунд\n"
+            "• Использовать /help для получения справки"
+        )
