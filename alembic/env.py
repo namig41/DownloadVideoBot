@@ -8,6 +8,7 @@ from sqlalchemy import pool
 
 from alembic import context
 
+
 # Добавляем путь к src в PYTHONPATH
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
@@ -31,7 +32,7 @@ postgres_user = os.getenv("POSTGRES_USER", "postgres")
 postgres_password = os.getenv("POSTGRES_PASSWORD", "postgres")
 postgres_host = os.getenv("POSTGRES_HOST", "localhost")
 postgres_port = os.getenv("POSTGRES_PORT", "5432")
-postgres_db = os.getenv("POSTGRES_DB", "video_downloader")
+postgres_db = os.getenv("POSTGRES_DB", "download_video")
 
 # Если указаны настройки PostgreSQL, используем PostgreSQL
 if all([postgres_user, postgres_password, postgres_host, postgres_db]):
@@ -107,4 +108,3 @@ if context.is_offline_mode():
     run_migrations_offline()
 else:
     run_migrations_online()
-
