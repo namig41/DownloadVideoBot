@@ -71,6 +71,8 @@ uv run python src/bot/main.py
 
 ### Запуск через Docker
 
+#### Локальная разработка (сборка образа)
+
 ```bash
 # Сборка образов
 make docker-build
@@ -93,6 +95,18 @@ make docker-down
 docker-compose down
 ```
 
+#### Production (использование образа из GitHub Container Registry)
+
+```bash
+# Скачать образ из GitHub Container Registry
+docker pull ghcr.io/ваш-username/download_video:latest
+
+# Или использовать docker-compose.prod.yml
+docker-compose -f docker-compose.prod.yml up -d
+```
+
+**Примечание:** Замените `ваш-username/download_video` на ваш GitHub репозиторий в формате `username/repository-name`
+
 ## Команды Makefile
 
 ### Основные команды
@@ -104,11 +118,14 @@ docker-compose down
 - `make bot` - Запустить бота локально
 
 ### Docker команды
-- `make docker-build` - Собрать Docker образ
-- `make docker-up` - Запустить контейнеры
+- `make docker-build` - Собрать Docker образ локально
+- `make docker-up` - Запустить контейнеры (локальная разработка)
 - `make docker-down` - Остановить контейнеры
 - `make docker-logs` - Показать логи контейнеров
 - `make docker-shell` - Открыть shell в контейнере бота
+- `make docker-pull` - Скачать образ из GitHub Container Registry
+- `make docker-prod-up` - Запустить production контейнеры (из GitHub)
+- `make docker-prod-down` - Остановить production контейнеры
 
 ## Использование uv
 

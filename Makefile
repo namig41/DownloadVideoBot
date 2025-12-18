@@ -53,3 +53,12 @@ docker-logs:
 docker-shell:
 	docker-compose exec bot /bin/bash
 
+docker-pull:
+	docker pull ghcr.io/$(shell git config --get remote.origin.url | sed 's/.*github.com[:/]\(.*\)\.git/\1/')/download_video:latest
+
+docker-prod-up:
+	docker-compose -f docker-compose.prod.yml up -d
+
+docker-prod-down:
+	docker-compose -f docker-compose.prod.yml down
+
