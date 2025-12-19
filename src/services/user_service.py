@@ -1,7 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, update, func
-from datetime import datetime, date
-from typing import Optional, Tuple
+from datetime import datetime
+from typing import Optional
 from database.models import User
 
 
@@ -15,9 +15,7 @@ class UserService:
         username: Optional[str] = None,
         first_name: Optional[str] = None,
         last_name: Optional[str] = None,
-        language_code: Optional[str] = None,
-        is_premium: bool = False,
-        is_bot: bool = False
+        language_code: Optional[str] = None
     ) -> User:
         """Получить пользователя или создать нового"""
         # Ищем существующего пользователя
@@ -32,8 +30,6 @@ class UserService:
             user.first_name = first_name or user.first_name
             user.last_name = last_name or user.last_name
             user.language_code = language_code or user.language_code
-            user.is_premium = is_premium
-            user.is_bot = is_bot
             user.last_activity = datetime.utcnow()
             user.updated_at = datetime.utcnow()
         else:
@@ -44,13 +40,9 @@ class UserService:
                 first_name=first_name,
                 last_name=last_name,
                 language_code=language_code,
-                is_premium=is_premium,
-                is_bot=is_bot,
                 created_at=datetime.utcnow(),
                 updated_at=datetime.utcnow(),
-                last_activity=datetime.utcnow(),
-                daily_attempts=0,
-                last_attempt_date=date.today()
+                last_activity=datetime.utcnow()
             )
             session.add(user)
         
@@ -79,20 +71,7 @@ class UserService:
             )
         )
         await session.commit()
-    
-    @staticmethod
-    async def increment_photos_processed(session: AsyncSession, telegram_id: int):
-        """Увеличить счетчик обработанных фото"""
-        await session.execute(
-            update(User)
-            .where(User.telegram_id == telegram_id)
-            .values(
-                total_photos_processed=User.total_photos_processed + 1,
-                last_activity=datetime.utcnow(),
-                updated_at=datetime.utcnow()
-            )
-        )
-        await session.commit()
+
     
     @staticmethod
     async def increment_videos_downloaded(session: AsyncSession, telegram_id: int):
@@ -126,9 +105,7 @@ class UserService:
             "first_name": user.first_name,
             "last_name": user.last_name,
             "language_code": user.language_code,
-            "is_premium": user.is_premium,
             "total_requests": user.total_requests,
-            "total_photos_processed": user.total_photos_processed,
             "total_videos_downloaded": user.total_videos_downloaded,
             "created_at": user.created_at.isoformat() if user.created_at else None,
             "last_activity": user.last_activity.isoformat() if user.last_activity else None,

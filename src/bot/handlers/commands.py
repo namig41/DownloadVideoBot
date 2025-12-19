@@ -29,9 +29,7 @@ async def cmd_start(message: Message):
             username=message.from_user.username,
             first_name=message.from_user.first_name,
             last_name=message.from_user.last_name,
-            language_code=message.from_user.language_code,
-            is_premium=getattr(message.from_user, 'is_premium', False),
-            is_bot=message.from_user.is_bot
+            language_code=message.from_user.language_code
         )
     
     # Формируем приветствие
@@ -158,8 +156,6 @@ async def callback_stats(callback: CallbackQuery):
                 user_info.append(f"Username: @{stats['username']}")
             if stats.get('language_code'):
                 user_info.append(f"Язык: {stats['language_code'].upper()}")
-            if stats.get('is_premium'):
-                user_info.append("Premium: ✅")
             
             # Статистика использования
             days_used = stats.get('days_used', 0)
@@ -300,8 +296,6 @@ async def cmd_stats(message: Message):
                 user_info.append(f"Username: @{stats['username']}")
             if stats.get('language_code'):
                 user_info.append(f"Язык: {stats['language_code'].upper()}")
-            if stats.get('is_premium'):
-                user_info.append("Premium: ✅")
             
             # Статистика использования
             days_used = stats.get('days_used', 0)

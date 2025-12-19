@@ -38,9 +38,7 @@ async def process_video_url(message: Message):
             username=message.from_user.username,
             first_name=message.from_user.first_name,
             last_name=message.from_user.last_name,
-            language_code=message.from_user.language_code,
-            is_premium=getattr(message.from_user, 'is_premium', False),
-            is_bot=message.from_user.is_bot
+            language_code=message.from_user.language_code
         )
         
         await UserService.increment_requests(session, message.from_user.id)
