@@ -4,6 +4,7 @@ from aiogram.types import Message, FSInputFile
 from database import get_db
 from services.user_service import UserService
 from services.video_downloader import download_video
+from bot.keyboards import get_main_keyboard
 import re
 import os
 import logging
@@ -63,9 +64,17 @@ async def process_video_url(message: Message):
                 try:
                     await status_msg.edit_text("✅ Видео готово. Отправляю")
                     video_file = FSInputFile(file_path)
+                    # Отправляем видео без клавиатуры
                     await message.bot.send_video(
                         chat_id=message.chat.id,
                         video=video_file
+                    )
+                    
+                    # Отправляем меню отдельным сообщением
+                    await message.bot.send_message(
+                        chat_id=message.chat.id,
+                        text="Выберите действие:",
+                        reply_markup=get_main_keyboard()
                     )
                     
                     # Удаляем временное сообщение о статусе
@@ -85,26 +94,33 @@ async def process_video_url(message: Message):
                         await status_msg.edit_text(
                             "Видео готово, но файл слишком большой для отправки в Telegram.\n\n"
                             "Максимальный размер файла в Telegram: 50 МБ.\n"
-                            "Попробуйте скачать видео с меньшим разрешением или сократить длительность."
+                            "Попробуйте скачать видео с меньшим разрешением или сократить длительность.",
+                            reply_markup=get_main_keyboard()
                         )
                     elif "timeout" in error_msg or "timed out" in error_msg:
                         await status_msg.edit_text(
                             "Видео готово, но произошла ошибка при отправке из-за таймаута.\n\n"
-                            "Попробуйте запросить видео снова."
+                            "Попробуйте запросить видео снова.",
+                            reply_markup=get_main_keyboard()
                         )
                     else:
                         await status_msg.edit_text(
                             "Видео готово, но произошла ошибка при отправке.\n\n"
-                            "Попробуйте запросить видео снова или обратитесь в поддержку."
+                            "Попробуйте запросить видео снова или обратитесь в поддержку.",
+                            reply_markup=get_main_keyboard()
                         )
             else:
                 await status_msg.edit_text(
-                    f"Задача выполнена: {result.get('message', 'Готово')}"
+                    f"Задача выполнена: {result.get('message', 'Готово')}",
+                    reply_markup=get_main_keyboard()
                 )
         else:
             # Ошибка при скачивании
             error = result.get("error", "Неизвестная ошибка")
-            await status_msg.edit_text(f"❌ {error}")
+            await status_msg.edit_text(
+                f"❌ {error}",
+                reply_markup=get_main_keyboard()
+            )
     except Exception as e:
         logger.error(f"Критическая ошибка при обработке видео: {e}", exc_info=True)
         await status_msg.edit_text(
@@ -112,5 +128,6 @@ async def process_video_url(message: Message):
             "Попробуйте:\n"
             "• Проверить правильность ссылки\n"
             "• Повторить попытку через несколько секунд\n"
-            "• Использовать /help для получения справки"
+            "• Использовать /help для получения справки",
+            reply_markup=get_main_keyboard()
         )

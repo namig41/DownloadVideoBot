@@ -1,10 +1,11 @@
 """Обработчики команд бота"""
 from aiogram import Router
-from aiogram.types import Message
+from aiogram.types import Message, CallbackQuery
 from aiogram.filters import Command
 from database.database import get_db
 from services.user_service import UserService
 from config.settings import settings
+from bot.keyboards import get_main_keyboard
 import asyncio
 from datetime import datetime
 
@@ -46,7 +47,8 @@ async def cmd_start(message: Message):
         "• YouTube Shorts\n\n"
         "Просто отправьте мне ссылку на видео, и я скачаю его для вас.\n"
         "Поддерживаются видео до 5 минут.\n\n"
-        "Бесплатно и без ограничений."
+        "Бесплатно и без ограничений.",
+        reply_markup=get_main_keyboard()
     )
 
 
@@ -65,8 +67,155 @@ async def cmd_help(message: Message):
         "Команды:\n"
         "/stats - Посмотреть вашу статистику\n"
         "/examples - Примеры использования\n"
-        "/privacy - Политика конфиденциальности"
+        "/privacy - Политика конфиденциальности",
+        reply_markup=get_main_keyboard()
     )
+
+
+@router.callback_query(lambda c: c.data == "help")
+async def callback_help(callback: CallbackQuery):
+    """Обработчик callback кнопки Помощь"""
+    await callback.answer()
+    # Отправляем новое сообщение, так как callback может быть из другого сообщения
+    await callback.message.answer(
+        "Как использовать:\n\n"
+        "1. Отправьте ссылку на видео из:\n"
+        "   • Instagram\n"
+        "   • TikTok\n"
+        "   • YouTube Shorts\n"
+        "2. Получите скачанное видео\n\n"
+        "Просто скопируйте и отправьте ссылку - бот автоматически распознает её и начнет скачивание.\n\n"
+        "Поддерживаются видео до 5 минут. Более длинные видео не скачиваются.\n\n"
+        "Команды:\n"
+        "/stats - Посмотреть вашу статистику\n"
+        "/examples - Примеры использования\n"
+        "/privacy - Политика конфиденциальности",
+        reply_markup=get_main_keyboard()
+    )
+
+
+@router.callback_query(lambda c: c.data == "examples")
+async def callback_examples(callback: CallbackQuery):
+    """Обработчик callback кнопки Примеры"""
+    await callback.answer()
+    await callback.message.answer(
+        "Примеры использования:\n\n"
+        "1. Сохранение понравившегося видео из TikTok\n"
+        "   Отправьте ссылку на видео, чтобы сохранить его для просмотра позже\n\n"
+        "2. Создание личной коллекции контента\n"
+        "   Собирайте интересные видео из разных платформ в одном месте\n\n"
+        "3. Офлайн просмотр видео\n"
+        "   Скачайте видео для просмотра без интернета\n\n"
+        "4. Сохранение видео для дальнейшего использования\n"
+        "   Используйте скачанные видео для создания собственного контента\n\n"
+        "Как использовать:\n"
+        "Просто отправьте ссылку на видео из Instagram, TikTok или YouTube Shorts.",
+        reply_markup=get_main_keyboard()
+    )
+
+
+@router.callback_query(lambda c: c.data == "stats")
+async def callback_stats(callback: CallbackQuery):
+    """Обработчик callback кнопки Статистика"""
+    await callback.answer()
+    # Создаем временный объект Message для передачи в cmd_stats
+    # Используем callback.message как основу
+    async for session in get_db():
+        stats = await UserService.get_user_stats(session, callback.from_user.id)
+        if stats:
+            # Форматируем имя пользователя
+            full_name = ""
+            if stats.get('first_name'):
+                full_name = stats['first_name']
+                if stats.get('last_name'):
+                    full_name += f" {stats['last_name']}"
+            
+            # Форматируем дату регистрации
+            created_at = stats.get('created_at')
+            created_at_str = "неизвестно"
+            if created_at:
+                try:
+                    dt = datetime.fromisoformat(created_at.replace('Z', '+00:00'))
+                    created_at_str = dt.strftime("%d.%m.%Y")
+                except:
+                    created_at_str = created_at
+            
+            # Форматируем дату последней активности
+            last_activity = stats.get('last_activity')
+            last_activity_str = "никогда"
+            if last_activity:
+                try:
+                    dt = datetime.fromisoformat(last_activity.replace('Z', '+00:00'))
+                    last_activity_str = dt.strftime("%d.%m.%Y %H:%M")
+                except:
+                    last_activity_str = last_activity
+            
+            # Формируем информацию о пользователе
+            user_info = []
+            if full_name:
+                user_info.append(f"Имя: {full_name}")
+            if stats.get('username'):
+                user_info.append(f"Username: @{stats['username']}")
+            if stats.get('language_code'):
+                user_info.append(f"Язык: {stats['language_code'].upper()}")
+            if stats.get('is_premium'):
+                user_info.append("Premium: ✅")
+            
+            # Статистика использования
+            days_used = stats.get('days_used', 0)
+            total_videos = stats.get('total_videos_downloaded', 0)
+            total_requests = stats.get('total_requests', 0)
+            
+            # Вычисляем среднее количество видео в день
+            avg_per_day = round(total_videos / days_used, 1) if days_used > 0 else 0
+            
+            stats_text = (
+                f"📊 Ваша статистика:\n\n"
+                f"👤 Профиль:\n"
+            )
+            
+            if user_info:
+                stats_text += "\n".join(user_info) + "\n"
+            else:
+                stats_text += "Информация недоступна\n"
+            
+            stats_text += (
+                f"\n📈 Использование:\n"
+                f"• Скачано видео: {total_videos}\n"
+                f"• Всего запросов: {total_requests}\n"
+                f"• Дней использования: {days_used}\n"
+                f"• Среднее в день: {avg_per_day} видео\n"
+                f"\n🕐 Даты:\n"
+                f"• Регистрация: {created_at_str}\n"
+                f"• Последняя активность: {last_activity_str}"
+            )
+            
+            await callback.message.answer(
+                stats_text,
+                reply_markup=get_main_keyboard()
+            )
+        else:
+            await callback.message.answer(
+                "Статистика не найдена. Используйте /start для регистрации.",
+                reply_markup=get_main_keyboard()
+            )
+        break
+
+
+@router.callback_query(lambda c: c.data == "invite")
+async def callback_invite(callback: CallbackQuery):
+    """Обработчик callback кнопки Пригласить"""
+    await callback.answer()
+    bot_info = await callback.bot.get_me()
+    bot_username = bot_info.username or settings.TELEGRAM_BOT_NAME or "your_bot"
+    invite_link = f"https://t.me/{bot_username}?start=ref_{callback.from_user.id}"
+    
+    invite_text = (
+        "👥 Пригласите друзей использовать бота\n\n"
+        f"Ссылка для приглашения:\n{invite_link}\n\n"
+        "Поделитесь этой ссылкой с друзьями, и они смогут начать использовать бота."
+    )
+    await callback.message.answer(invite_text, reply_markup=get_main_keyboard())
 
 
 @router.message(Command("examples"))
@@ -83,7 +232,8 @@ async def cmd_examples(message: Message):
         "4. Сохранение видео для дальнейшего использования\n"
         "   Используйте скачанные видео для создания собственного контента\n\n"
         "Как использовать:\n"
-        "Просто отправьте ссылку на видео из Instagram, TikTok или YouTube Shorts."
+        "Просто отправьте ссылку на видео из Instagram, TikTok или YouTube Shorts.",
+        reply_markup=get_main_keyboard()
     )
 
 
@@ -104,7 +254,8 @@ async def cmd_privacy(message: Message):
         "• Видео удаляются сразу после отправки пользователю\n"
         "• Данные не передаются третьим лицам\n"
         "• Данные не используются для рекламы\n\n"
-        "По вопросам конфиденциальности обращайтесь к администратору."
+        "По вопросам конфиденциальности обращайтесь к администратору.",
+        reply_markup=get_main_keyboard()
     )
 
 
@@ -114,27 +265,82 @@ async def cmd_stats(message: Message):
     async for session in get_db():
         stats = await UserService.get_user_stats(session, message.from_user.id)
         if stats:
+            # Форматируем имя пользователя
+            full_name = ""
+            if stats.get('first_name'):
+                full_name = stats['first_name']
+                if stats.get('last_name'):
+                    full_name += f" {stats['last_name']}"
+            
+            # Форматируем дату регистрации
+            created_at = stats.get('created_at')
+            created_at_str = "неизвестно"
+            if created_at:
+                try:
+                    dt = datetime.fromisoformat(created_at.replace('Z', '+00:00'))
+                    created_at_str = dt.strftime("%d.%m.%Y")
+                except:
+                    created_at_str = created_at
+            
             # Форматируем дату последней активности
             last_activity = stats.get('last_activity')
+            last_activity_str = "никогда"
             if last_activity:
                 try:
-                    # Парсим ISO формат и форматируем в читаемый вид
                     dt = datetime.fromisoformat(last_activity.replace('Z', '+00:00'))
                     last_activity_str = dt.strftime("%d.%m.%Y %H:%M")
                 except:
                     last_activity_str = last_activity
+            
+            # Формируем информацию о пользователе
+            user_info = []
+            if full_name:
+                user_info.append(f"Имя: {full_name}")
+            if stats.get('username'):
+                user_info.append(f"Username: @{stats['username']}")
+            if stats.get('language_code'):
+                user_info.append(f"Язык: {stats['language_code'].upper()}")
+            if stats.get('is_premium'):
+                user_info.append("Premium: ✅")
+            
+            # Статистика использования
+            days_used = stats.get('days_used', 0)
+            total_videos = stats.get('total_videos_downloaded', 0)
+            total_requests = stats.get('total_requests', 0)
+            
+            # Вычисляем среднее количество видео в день
+            avg_per_day = round(total_videos / days_used, 1) if days_used > 0 else 0
+            
+            stats_text = (
+                f"📊 Ваша статистика:\n\n"
+                f"👤 Профиль:\n"
+            )
+            
+            if user_info:
+                stats_text += "\n".join(user_info) + "\n"
             else:
-                last_activity_str = "никогда"
+                stats_text += "Информация недоступна\n"
+            
+            stats_text += (
+                f"\n📈 Использование:\n"
+                f"• Скачано видео: {total_videos}\n"
+                f"• Всего запросов: {total_requests}\n"
+                f"• Дней использования: {days_used}\n"
+                f"• Среднее в день: {avg_per_day} видео\n"
+                f"\n🕐 Даты:\n"
+                f"• Регистрация: {created_at_str}\n"
+                f"• Последняя активность: {last_activity_str}"
+            )
             
             await message.answer(
-                f"📊 Ваша статистика:\n\n"
-                f"Пользователь: @{stats['username'] or 'без имени'}\n"
-                f"Скачано видео: {stats['total_videos_downloaded']}\n"
-                f"Всего запросов: {stats['total_requests']}\n"
-                f"Последняя активность: {last_activity_str}"
+                stats_text,
+                reply_markup=get_main_keyboard()
             )
         else:
-            await message.answer("Статистика не найдена. Используйте /start для регистрации.")
+            await message.answer(
+                "Статистика не найдена. Используйте /start для регистрации.",
+                reply_markup=get_main_keyboard()
+            )
         break
 
 
@@ -143,7 +349,10 @@ async def cmd_admin(message: Message):
     """Обработчик команды /admin для массовой рассылки"""
     # Проверяем права администратора
     if not is_admin(message.from_user.id):
-        await message.answer("У вас нет прав для выполнения этой команды.")
+        await message.answer(
+            "У вас нет прав для выполнения этой команды.",
+            reply_markup=get_main_keyboard()
+        )
         return
     
     # Проверяем, есть ли текст после команды
@@ -154,7 +363,8 @@ async def cmd_admin(message: Message):
         await message.answer(
             "Команда массовой рассылки\n\n"
             "Использование: /admin <текст сообщения>\n\n"
-            "Пример: /admin Привет. Это массовая рассылка."
+            "Пример: /admin Привет. Это массовая рассылка.",
+            reply_markup=get_main_keyboard()
         )
         return
     
@@ -166,7 +376,10 @@ async def cmd_admin(message: Message):
         users = await UserService.get_all_users(session, limit=10000)
         
         if not users:
-            await message.answer("Пользователи не найдены.")
+            await message.answer(
+                "Пользователи не найдены.",
+                reply_markup=get_main_keyboard()
+            )
             return
         
         total_users = len(users)

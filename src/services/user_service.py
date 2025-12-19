@@ -115,14 +115,24 @@ class UserService:
         if not user:
             return None
         
+        # Вычисляем количество дней использования
+        days_used = 0
+        if user.created_at:
+            days_used = (datetime.utcnow() - user.created_at).days
+        
         return {
             "telegram_id": user.telegram_id,
             "username": user.username,
+            "first_name": user.first_name,
+            "last_name": user.last_name,
+            "language_code": user.language_code,
+            "is_premium": user.is_premium,
             "total_requests": user.total_requests,
             "total_photos_processed": user.total_photos_processed,
             "total_videos_downloaded": user.total_videos_downloaded,
             "created_at": user.created_at.isoformat() if user.created_at else None,
             "last_activity": user.last_activity.isoformat() if user.last_activity else None,
+            "days_used": days_used,
         }
     
     @staticmethod

@@ -1,6 +1,7 @@
 """Обработчики обычных сообщений"""
 from aiogram import Router
 from aiogram.types import Message
+from bot.keyboards import get_main_keyboard
 
 router = Router()
 
@@ -13,6 +14,7 @@ async def echo_message(message: Message):
         "• Instagram\n"
         "• TikTok\n"
         "• YouTube Shorts\n\n"
-        "И я скачаю его для вас. Используйте /help для справки."
+        "И я скачаю его для вас. Используйте /help для справки.",
+        reply_markup=get_main_keyboard()
     )
 
