@@ -14,7 +14,7 @@ router = Router()
 
 def is_admin(user_id: int) -> bool:
     """Проверяет, является ли пользователь администратором"""
-    admin_ids = settings.get_admin_ids()
+    admin_ids = [settings.TELEGRAM_ADMINS_ID]
     return user_id in admin_ids
 
 
